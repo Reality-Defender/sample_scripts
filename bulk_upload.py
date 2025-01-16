@@ -23,7 +23,6 @@ def get_signed_url(file_name, token, retries=3, delay=2):
         if response.status_code == 200:
             try:
                 response_data = response.json()
-                # print("Response from get_signed_url:", response_data)
                 return response_data
             except ValueError:
                 print("Error: Response is not in JSON format")
@@ -43,7 +42,6 @@ def get_signed_url(file_name, token, retries=3, delay=2):
 def upload_file(file_path, token, signed_url):
     with open(file_path, 'rb') as file:
         file_data = file.read()
-    
     try:
         response = requests.put(signed_url, data=file_data, timeout=20)
         response.raise_for_status()
@@ -70,9 +68,10 @@ if __name__ == "__main__":
 
     if os.path.isfile(path):
         response = get_signed_url(path, token)
-        if "response" in response:
+        if response:
             signed_url = response["response"].get("signedUrl")
-            request_id = upload_file(path, token, signed_url).get("requestId")
+            request_id = response.get("requestId")
+            upload_file(path, token, signed_url).get("requestId")
         else:
             print("Error: Invalid response structure or failed to get signed URL.")
     elif os.path.isdir(path):
@@ -80,12 +79,11 @@ if __name__ == "__main__":
         for root, dirs, files in os.walk(path):
             for file in files:
                 file_path = os.path.join(root, file)
-                response_data = get_signed_url(file, token)
-                if "response" in response_data:
-                    signed_url = response_data["response"].get("signedUrl")
-                    request_id = upload_file(file_path, token, signed_url).get("requestId")
-                    # Append file name and request ID to results dataframe
-                    results_df.loc[len(results_df)] = [file, request_id, file_path]
+                response = get_signed_url(file, token)
+                if response:
+                    signed_url = response["response"].get("signedUrl")
+                    request_id = response.get("requestId")
+                    upload_file(path, token, signed_url).get("requestId")                  
                 else:
                     print(f"Error: Invalid response structure or failed to get signed URL for file {file}.")
         # Save results to CSV file
