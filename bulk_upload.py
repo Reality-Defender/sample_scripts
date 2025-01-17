@@ -54,21 +54,20 @@ def upload_file(file_path, token, signed_url):
         print(f'File upload failed with error: {e}')
         return None
     
-def process_file(file_path, token):
-        response = get_signed_url(file_path, token)
-        results_df = pd.DataFrame(columns=['file_name', 'request_id', 'file_path'])
-        if response:
-            signed_url = response["response"].get("signedUrl")
-            request_id = response.get("requestId")
-            upload_file(file_path, token, signed_url)
-            results_df = pd.concat([results_df, pd.DataFrame([{
-                'file_name': os.path.basename(file_path),
-                'request_id': request_id,
-                'file_path': file_path
-            }])], ignore_index=True)
-        else:
-            print(f"Error: Invalid response structure or failed to get signed URL for file {os.path.basename(file_path)}.")
-        return results_df
+def process_file(file_path, token, results_df):
+    response = get_signed_url(file_path, token)
+    if response:
+        signed_url = response["response"].get("signedUrl")
+        request_id = response.get("requestId")
+        upload_file(file_path, token, signed_url)
+        results_df = pd.concat([results_df, pd.DataFrame([{
+            'file_name': os.path.basename(file_path),
+            'request_id': request_id,
+            'file_path': file_path
+        }])], ignore_index=True)
+    else:
+        print(f"Error: Invalid response structure or failed to get signed URL for file {os.path.basename(file_path)}.")
+    return results_df
     
 if __name__ == "__main__":
     # Get RD_API key from environment variables (must be included in .env file)
@@ -82,10 +81,10 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # Create a dataframe to store file names and request IDs
-    
+    results_df = pd.DataFrame(columns=['file_name', 'request_id', 'file_path'])
 
     if os.path.isfile(path):
-        results_df = process_file(path, token)
+        results_df = process_file(path, token, results_df)
         # Save results to CSV file
         results_df.to_csv('uploads.csv', index=False)
         print("Results saved to uploads.csv")
@@ -94,7 +93,7 @@ if __name__ == "__main__":
         for root, dirs, files in os.walk(path):
             for file in files:
                 file_path = os.path.join(root, file)
-                results_df = process_file(file_path, token)
+                results_df = process_file(file_path, token, results_df)
         # Save results to CSV file
         results_df.to_csv('uploads.csv', index=False)
         print("Results saved to uploads.csv")
