@@ -53,6 +53,7 @@ def get_media_detail(request_id, token, results_df):
             
     else:
         response_data = fetch_data_from_api(url, headers)
+        print(f"fetching {request_id}")
         if response_data:
             results_df = process_response_data({'data': [response_data]}, results_df)
     
