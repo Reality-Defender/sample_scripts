@@ -9,7 +9,7 @@ load_dotenv()
 
 # This function gets a pre-signed url that you can post a file to
 def get_signed_url(file_name, token, retries=3, delay=2):
-    url = "https://api.dev.realitydefender.xyz/api/files/aws-presigned"
+    url = "https://api.prd.realitydefender.xyz/api/files/aws-presigned"
     
     # Extract just the filename from the full path if given
     file_name = os.path.basename(file_name)

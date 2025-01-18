@@ -31,7 +31,7 @@ def fetch_data_from_api(url, headers):
 def get_media_detail(request_id, token, results_df):
     page_index = 1
     headers = {"x-api-key": token, "Content-Type": "application/json"}
-    url = f"https://api.dev.realitydefender.xyz/api/media/users/{request_id}?pageIndex={page_index}"
+    url = f"https://api.prd.realitydefender.xyz/api/media/users/{request_id}?pageIndex={page_index}"
     
     if request_id == "":
         while True:
