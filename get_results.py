@@ -7,13 +7,11 @@ import csv
 
 def process_response_data(request_id, response_data, results_df):
     for item in response_data.get('data', []):
-        filename = item.get('originalFileName', 'N/A')
         overall_status = item["resultsSummary"].get('status', 'N/A')
         score = item["resultsSummary"].get('metadata', {}).get('finalScore', 'N/A')
 
         # Append the data to the DataFrame
         results_df = pd.concat([results_df, pd.DataFrame([{
-            'file_name': filename,
             'request_id': request_id,
             'status': overall_status,
             'score': score
@@ -63,7 +61,7 @@ def get_media_detail(request_id, token, results_df):
 if __name__ == "__main__":
     load_dotenv()
     token = os.getenv("RD_API")
-    results_df = pd.DataFrame(columns=['file_name', 'status', 'score'])
+    results_df = pd.DataFrame(columns=['request_id', 'status', 'score'])
 
     if len(sys.argv) > 2:
         print("Usage: python sample_get_script.py <csv_file_path_or_empty_to_get_all_media>")
