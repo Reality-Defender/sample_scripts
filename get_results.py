@@ -5,7 +5,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import csv
 
-def process_response_data(response_data, results_df):
+def process_response_data(request_id, response_data, results_df):
     for item in response_data.get('data', []):
         filename = item.get('originalFileName', 'N/A')
         overall_status = item["resultsSummary"].get('status', 'N/A')
@@ -14,6 +14,7 @@ def process_response_data(response_data, results_df):
         # Append the data to the DataFrame
         results_df = pd.concat([results_df, pd.DataFrame([{
             'file_name': filename,
+            'request_id': request_id,
             'status': overall_status,
             'score': score
         }])], ignore_index=True)
@@ -43,7 +44,7 @@ def get_media_detail(request_id, token, results_df):
                 page_index += 1
                 continue
 
-            results_df = process_response_data(response_data, results_df)
+            results_df = process_response_data(request_id, response_data, results_df)
 
             total_pages = response_data.get('totalPages', 1)
 
@@ -55,7 +56,7 @@ def get_media_detail(request_id, token, results_df):
         response_data = fetch_data_from_api(url, headers)
         print(f"fetching {request_id}")
         if response_data:
-            results_df = process_response_data({'data': [response_data]}, results_df)
+            results_df = process_response_data(request_id, {'data': [response_data]}, results_df)
     
     return results_df
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
                 request_id = row.get('request_id', '')
                 if request_id:
                     results_df = get_media_detail(request_id, token, results_df)
-            merged_df = pd.merge(df, results_df, on='file_name', how='left')
+            merged_df = pd.merge(df, results_df, on='request_id', how='left')
             merged_df.to_csv('results.csv', index=False)
             print("Results saved to results.csv")
         except FileNotFoundError:
