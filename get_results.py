@@ -40,7 +40,7 @@ def get_media_detail(request_id, token, results_df, include_all_users=False):
             print(f"getting page {page_index}")
             
             response_data = fetch_data_from_api(url, headers)
-            if response_data is None or not response_data.get('data'):
+            if response_data is None or not response_data.get('mediaList'):
                 print(f"No data found for page {page_index}. Skipping.")
                 page_index += 1
                 continue
@@ -70,16 +70,11 @@ if __name__ == "__main__":
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Fetch media details from Reality Defender API')
     parser.add_argument('--get-all', action='store_true', help='Get media details for all users')
-    parser.add_argument('csv_file', nargs='?', help='Path to CSV file containing request IDs')
+    parser.add_argument('csv_file', nargs='?', default=None, help='Path to CSV file containing request IDs')
     
     args = parser.parse_args()
 
-    if args.get_all:
-        request_id = ""
-        results_df = get_media_detail(request_id, token, results_df, include_all_users=True)
-        results_df.to_csv('results.csv', index=False)
-        print("Results saved to results.csv")
-    elif args.csv_file:
+    if args.csv_file:
         try:
             # Load the CSV into a DataFrame
             df = pd.read_csv(args.csv_file)
@@ -105,5 +100,7 @@ if __name__ == "__main__":
             print(f"Error: {e}")
             sys.exit(1)
     else:
-        parser.print_help()
-        sys.exit(1)
+        request_id = ""
+        results_df = get_media_detail(request_id, token, results_df, include_all_users=args.get_all)
+        results_df.to_csv('results.csv', index=False)
+        print("Results saved to results.csv")
