@@ -4,6 +4,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 import csv
+import argparse
 
 def process_response_data(request_id, response_data, results_df):
     for item in response_data.get('data', []):
@@ -27,13 +28,15 @@ def fetch_data_from_api(url, headers):
         print(f"An error occurred: {e}")
         return None
 
-def get_media_detail(request_id, token, results_df):
+def get_media_detail(request_id, token, results_df, include_all_users=False):
     page_index = 0
     headers = {"x-api-key": token, "Content-Type": "application/json"}
     
     if request_id == "":
         while True:
-            url = f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}?userIds=[]"
+            url = (f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}?userIds=[]" 
+                  if include_all_users 
+                  else f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}")
             print(f"getting page {page_index}")
             
             response_data = fetch_data_from_api(url, headers)
@@ -64,19 +67,22 @@ if __name__ == "__main__":
     token = os.getenv("RD_API")
     results_df = pd.DataFrame(columns=['request_id', 'status', 'score'])
 
-    if len(sys.argv) > 2:
-        print("Usage: python sample_get_script.py <csv_file_path_or_empty_to_get_all_media>")
-        sys.exit(1)
-    elif len(sys.argv) == 1:
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Fetch media details from Reality Defender API')
+    parser.add_argument('--get-all', action='store_true', help='Get media details for all users')
+    parser.add_argument('csv_file', nargs='?', help='Path to CSV file containing request IDs')
+    
+    args = parser.parse_args()
+
+    if args.get_all:
         request_id = ""
-        results_df = get_media_detail(request_id, token, results_df)
+        results_df = get_media_detail(request_id, token, results_df, include_all_users=True)
         results_df.to_csv('results.csv', index=False)
         print("Results saved to results.csv")
-    else:
-        csv_file_path = sys.argv[1]
+    elif args.csv_file:
         try:
             # Load the CSV into a DataFrame
-            df = pd.read_csv(csv_file_path)
+            df = pd.read_csv(args.csv_file)
 
             # Validate that the required columns are present
             required_columns = {'file_name', 'request_id'}
@@ -93,8 +99,11 @@ if __name__ == "__main__":
             merged_df.to_csv('results.csv', index=False)
             print("Results saved to results.csv")
         except FileNotFoundError:
-            print(f"Error: File {csv_file_path} not found.")
+            print(f"Error: File {args.csv_file} not found.")
             sys.exit(1)
         except Exception as e:
             print(f"Error: {e}")
             sys.exit(1)
+    else:
+        parser.print_help()
+        sys.exit(1)
