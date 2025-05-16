@@ -7,13 +7,16 @@ import csv
 import argparse
 
 def process_response_data(request_id, response_data, results_df):
-    for item in response_data.get('data', []):
-        overall_status = item["resultsSummary"].get('status', 'N/A')
-        score = item["resultsSummary"].get('metadata', {}).get('finalScore', 'N/A')
+    for item in response_data.get('mediaList', []):
+        results_summary = item.get("resultsSummary", {})
+        
+        overall_status = results_summary.get('status', 'UNABLE_TO_EVALUATE') if results_summary else 'UNABLE_TO_EVALUATE'
+        score = results_summary.get('metadata', {}).get('finalScore', '') if results_summary else ''
 
         # Append the data to the DataFrame
         results_df = pd.concat([results_df, pd.DataFrame([{
-            'request_id': request_id,
+            'file_name': item.get('originalFileName', ''),
+            'request_id': request_id if request_id else item.get('requestId', ''),
             'status': overall_status,
             'score': score
         }])], ignore_index=True)
@@ -34,27 +37,30 @@ def get_media_detail(request_id, token, results_df, include_all_users=False):
     
     if request_id == "":
         while True:
-            url = (f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}?userIds=[]" 
+            url = (f"https://api.dev.realitydefender.xyz/api/v2/media/users/pages/{page_index}?userIds=[]" 
                   if include_all_users 
-                  else f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}")
+                  else f"https://api.dev.realitydefender.xyz/api/v2/media/users/pages/{page_index}")
             print(f"getting page {page_index}")
             
             response_data = fetch_data_from_api(url, headers)
-            if response_data is None or not response_data.get('mediaList'):
-                print(f"No data found for page {page_index}. Skipping.")
-                page_index += 1
-                continue
+            if response_data is None:
+                print(f"Error fetching page {page_index}. Stopping.")
+                break
+                
+            if not response_data.get('mediaList'):
+                print(f"No data found for page {page_index}. Stopping.")
+                break
 
             results_df = process_response_data(request_id, response_data, results_df)
 
-            total_pages = response_data.get('totalPages', 1)
-
+            total_pages = response_data.get('totalPages', 0)
+            
             if page_index >= total_pages:
                 break
             page_index += 1
             
     else:
-        url = f"https://api.prd.realitydefender.xyz/api/media/users/{request_id}"
+        url = f"https://api.dev.realitydefender.xyz/api/media/users/{request_id}"
         response_data = fetch_data_from_api(url, headers)
         print(f"fetching {request_id}")
         if response_data:
@@ -65,7 +71,7 @@ def get_media_detail(request_id, token, results_df, include_all_users=False):
 if __name__ == "__main__":
     load_dotenv()
     token = os.getenv("RD_API")
-    results_df = pd.DataFrame(columns=['request_id', 'status', 'score'])
+    results_df = pd.DataFrame(columns=['file_name', 'request_id', 'status', 'score'])
 
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Fetch media details from Reality Defender API')
