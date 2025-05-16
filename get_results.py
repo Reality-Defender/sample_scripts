@@ -7,7 +7,8 @@ import csv
 import argparse
 
 def process_response_data(request_id, response_data, results_df):
-    for item in response_data.get('mediaList', []):
+    data = response_data.get("mediaList") or response_data.get("data") or []
+    for item in data:
         results_summary = item.get("resultsSummary", {})
         
         overall_status = results_summary.get('status', 'UNABLE_TO_EVALUATE') if results_summary else 'UNABLE_TO_EVALUATE'
