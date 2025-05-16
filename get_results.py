@@ -28,12 +28,12 @@ def fetch_data_from_api(url, headers):
         return None
 
 def get_media_detail(request_id, token, results_df):
-    page_index = 1
+    page_index = 0
     headers = {"x-api-key": token, "Content-Type": "application/json"}
-    url = f"https://api.prd.realitydefender.xyz/api/media/users/{request_id}?pageIndex={page_index}"
     
     if request_id == "":
         while True:
+            url = f"https://api.prd.realitydefender.xyz/api/v2/media/users/pages/{page_index}?userIds=[]"
             print(f"getting page {page_index}")
             
             response_data = fetch_data_from_api(url, headers)
@@ -51,6 +51,7 @@ def get_media_detail(request_id, token, results_df):
             page_index += 1
             
     else:
+        url = f"https://api.prd.realitydefender.xyz/api/media/users/{request_id}"
         response_data = fetch_data_from_api(url, headers)
         print(f"fetching {request_id}")
         if response_data:
